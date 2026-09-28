@@ -158,8 +158,22 @@ public struct SettingsView: View {
                 ) {
                     Text("Right Edge").tag(DockEdge.right)
                     Text("Left Edge").tag(DockEdge.left)
-                    Text("Top Edge").tag(DockEdge.top)
                     Text("Bottom Edge").tag(DockEdge.bottom)
+                }
+
+                Picker(
+                    "Real Dock Side",
+                    selection: Binding(
+                        get: { preferences.realDockSide },
+                        set: { newSide in
+                            var updated = preferences
+                            updated.realDockSide = newSide
+                            onUpdatePreferences(updated)
+                        }
+                    )
+                ) {
+                    Text("Right").tag(DockEdge.right)
+                    Text("Left").tag(DockEdge.left)
                 }
             }
 

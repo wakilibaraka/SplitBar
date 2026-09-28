@@ -86,6 +86,11 @@ public struct WidgetIconView: View {
         let key = "widget." + identifier
         return IconCache.shared.image(key: key) {
             switch identifier {
+            case "calendar":
+                let path = "/System/Applications/Calendar.app"
+                if FileManager.default.fileExists(atPath: path) {
+                    return NSWorkspace.shared.icon(forFile: path)
+                }
             case "weather":
                 let path = "/System/Applications/Weather.app"
                 if FileManager.default.fileExists(atPath: path) {

@@ -111,14 +111,6 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         rightItem.target = self
         positionSubmenu.addItem(rightItem)
 
-        let topItem = NSMenuItem(
-            title: "Top Edge",
-            action: #selector(handleSetTopEdge),
-            keyEquivalent: ""
-        )
-        topItem.target = self
-        positionSubmenu.addItem(topItem)
-
         let positionMenuItem = NSMenuItem(title: "Dock Position", action: nil, keyEquivalent: "")
         positionMenuItem.submenu = positionSubmenu
         menu.addItem(positionMenuItem)
@@ -201,10 +193,6 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func handleSetRightEdge() {
         onChangeEdge(.right)
-    }
-
-    @objc private func handleSetTopEdge() {
-        onChangeEdge(.top)
     }
 
     @objc private func handleSelectTheme(_ sender: NSMenuItem) {

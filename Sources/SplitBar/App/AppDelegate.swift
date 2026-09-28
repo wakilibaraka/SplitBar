@@ -252,10 +252,24 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        if sanitizedItems != loadedSnapshot.dockItems {
+        // Split mimarisi: boş veya B1'in otomatik ürettiği düzen ekran görüntüsü düzenine göçürülür;
+        // elle düzenlenmiş config'lere dokunulmaz.
+        var launchSegments = loadedSnapshot.preferences.segments
+        var migratedSegments = false
+        if launchSegments.isEmpty {
+            launchSegments = SegmentDefaults.screenshotLayout(appItems: sanitizedItems)
+            migratedSegments = true
+        } else if SegmentDefaults.isAutoB1Layout(appItems: sanitizedItems, segments: launchSegments) {
+            launchSegments = SegmentDefaults.screenshotLayout(appItems: sanitizedItems)
+            migratedSegments = true
+        }
+
+        if sanitizedItems != loadedSnapshot.dockItems || migratedSegments {
+            var persistedPreferences = loadedSnapshot.preferences
+            persistedPreferences.segments = launchSegments
             let updatedSnapshot = ConfigurationSnapshot(
                 version: ConfigurationPersistence.currentVersion,
-                preferences: loadedSnapshot.preferences,
+                preferences: persistedPreferences,
                 dockItems: sanitizedItems
             )
             try? configPersistence.save(snapshot: updatedSnapshot)
@@ -266,7 +280,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             selectedItemID: nil,
             placement: loadedSnapshot.preferences.placement,
             isDockRevealed: true,
-            flyout: FlyoutState(activeItemID: nil, isVisible: false)
+            flyout: FlyoutState(activeItemID: nil, isVisible: false),
+            segments: launchSegments
         )
 
         let screenService = ScreenService()
@@ -300,6 +315,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         let launchAtLoginService = LaunchAtLoginService()
         let quickNotesService = QuickNotesService(baseURL: appSupport)
+        // Gerçek Dock çarpışma yönetimi; sahibi runtime, çıkışta geri yükleme AppDelegate'te
+        let dockController = DockController(
+            supportDirectory: appSupport,
+            relocationSide: loadedSnapshot.preferences.realDockSide
+        )
 
         self.runtimeController = AppRuntimeController(
             initialState: initialState,
@@ -319,7 +339,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             aiUsageService: aiUsageService,
             windowManagerService: windowManagerService,
             launchAtLoginService: launchAtLoginService,
-            quickNotesService: quickNotesService
+            quickNotesService: quickNotesService,
+            dockController: dockController
         )
+    }
+
+    public func applicationWillTerminate(_ notification: Notification) {
+        // CLAUDE.md: gerçek Dock orijinal durumuna geri getirilir (SIGTERM/SIGINT de DockController içinde yakalanır)
+        self.runtimeController?.dockController.restore()
     }
 }

@@ -135,9 +135,6 @@ public final class DockTooltipPanelController {
         case .right:
             targetX = anchorFrame.minX - width - 10.0
             targetY = screenY - (height / 2.0)
-        case .top:
-            targetX = screenX - (width / 2.0)
-            targetY = anchorFrame.minY - height - 10.0
         case .bottom:
             targetX = screenX - (width / 2.0)
             targetY = anchorFrame.maxY + 10.0

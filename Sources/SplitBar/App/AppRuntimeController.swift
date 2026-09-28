@@ -45,7 +45,7 @@ private struct AddItemViewHostingContainer: View {
 }
 
 private struct DockInteractiveContainerView: View {
-    let state: AppState
+    let segment: SegmentViewState
     let preferences: AppPreferences
     let config: DockMagnificationConfiguration
     let weatherState: WeatherState?
@@ -59,13 +59,26 @@ private struct DockInteractiveContainerView: View {
     let onShowAppWindows: (String, String, URL?) -> Void
     let onHoverItem: (DockItemViewState?, CGPoint?) -> Void
     let onUpdateIconSize: (Double) -> Void
+    let flyoutIsVisible: Bool
     @State private var pointerLocation: CGPoint?
     @State private var itemFrames: [DockItemGeometry] = []
     @State private var autoHideTimer: DispatchWorkItem?
 
     var body: some View {
         let viewState = makeDockViewState(
-            state: state,
+            state: AppState(
+                dockItems: segment.items.map { item in
+                    DockItem(id: item.id, name: item.name, kind: item.kind)
+                },
+                selectedItemID: nil,
+                placement: DockPlacement(
+                    edge: segment.edge,
+                    verticalOffsetFraction: 0.5,
+                    autoHide: preferences.placement.autoHide
+                ),
+                isDockRevealed: true,
+                flyout: .init(activeItemID: nil, isVisible: false)
+            ),
             pointer: pointerLocation,
             itemFrames: itemFrames,
             configuration: config,
@@ -75,7 +88,12 @@ private struct DockInteractiveContainerView: View {
             nowPlayingState: nowPlayingState
         )
         EdgeDockView(
-            viewState: viewState,
+            viewState: DockViewState(
+                items: viewState.items,
+                edge: segment.edge,
+                isRevealed: true,
+                selectedItemID: nil
+            ),
             materialStyle: preferences.materialStyle,
             reduceMotion: preferences.reduceMotion,
             autoHide: preferences.placement.autoHide,
@@ -126,7 +144,7 @@ private struct DockInteractiveContainerView: View {
                     pointerLocation = nil
                 }
                 onHoverItem(nil, nil)
-                if preferences.placement.autoHide && !state.flyout.isVisible {
+                if preferences.placement.autoHide && !flyoutIsVisible {
                     let task = DispatchWorkItem {
                         onAction(.hideDock)
                     }
@@ -147,6 +165,8 @@ public final class AppRuntimeController {
     public let catalogService: ApplicationCatalogService
     public let shortcutService: GlobalShortcutService
     public let panelController: EdgePanelController
+    public let segmentPanelManager: SegmentPanelManager
+    public let dockController: DockController
     public let flyoutController: FlyoutPanelController
     public let clipboardPersistence: ClipboardPersistence
     public let clipboardMonitor: ClipboardMonitor
@@ -199,7 +219,8 @@ public final class AppRuntimeController {
         aiUsageService: AIUsageService,
         windowManagerService: WindowManagerService,
         launchAtLoginService: LaunchAtLoginService,
-        quickNotesService: QuickNotesService
+        quickNotesService: QuickNotesService,
+        dockController: DockController
     ) {
         self.state = initialState
         self.preferences = preferences
@@ -239,6 +260,15 @@ public final class AppRuntimeController {
             influenceRadius: 75.0,
             maxLift: 0.0
         )
+
+        let segmentManager = SegmentPanelManager()
+        self.segmentPanelManager = segmentManager
+
+        // Gerçek Dock çarpışma yönetimi: önce çökme kurtarması, sonra current edge uygulanır
+        self.dockController = dockController
+        dockController.recoverIfNeeded()
+        dockController.applyPlacement(edge: initialState.placement.edge)
+        dockController.installSignalHandlers()
 
         weak var controllerRef: AppRuntimeController?
         let panel = EdgePanelController(onReveal: {
@@ -294,8 +324,7 @@ public final class AppRuntimeController {
         self.statusBarController = statusBar
         statusSelf = self
 
-        self.updateDockContent()
-        self.syncPanels()
+        self.syncSegments()
         self.setupDefaultShortcuts()
         self.setupClipboardMonitoring()
         self.setupLiveStreaming()
@@ -366,6 +395,9 @@ public final class AppRuntimeController {
     public func updatePreferences(_ newPreferences: AppPreferences) {
         self.preferences = newPreferences
         clipboardMonitor.updateExcludedBundleIdentifiers(newPreferences.clipboardExcludedBundleIdentifiers)
+        // Real Dock kenarı tercihi anında uygulanır; applyPlacement aynı duruma dokunmaz
+        dockController.relocationSide = newPreferences.realDockSide
+        dockController.applyPlacement(edge: newPreferences.placement.edge)
         refreshSettingsWindow()
         // Açık flyout yeni temaya hemen uysun
         if state.flyout.isVisible, let activeID = state.flyout.activeItemID {
@@ -376,6 +408,7 @@ public final class AppRuntimeController {
         } else {
             updateDockContent()
             syncPanels()
+            syncSegments()
             persistConfiguration()
         }
     }
@@ -563,6 +596,29 @@ public final class AppRuntimeController {
         case .updatePlacement(let placement):
             // Kalıcı kayıt ve auto-hide davranışı preferences üzerinden okunduğu için onunla senkron tutulur
             self.preferences.placement = placement
+            self.dockController.applyPlacement(edge: placement.edge)
+            // Split mimarisinde bölümler yerleşim kenarını izler; placements değişince hepsi yeniden tabanlanır
+            if !state.segments.isEmpty {
+                let rebased = state.segments.map { segment in
+                    DockSegment(
+                        id: segment.id,
+                        kind: segment.kind,
+                        edge: placement.edge,
+                        alignment: segment.alignment,
+                        offset: segment.offset,
+                        length: segment.length
+                    )
+                }
+                self.state = AppState(
+                    dockItems: self.state.dockItems,
+                    selectedItemID: self.state.selectedItemID,
+                    placement: placement,
+                    isDockRevealed: self.state.isDockRevealed,
+                    flyout: self.state.flyout,
+                    segments: rebased
+                )
+                self.preferences.segments = rebased
+            }
             // Auto-hide kapatılırken dock gizliyse geri getirecek tutamaç da kalmaz; dock görünür yapılır
             if !placement.autoHide && !self.state.isDockRevealed {
                 self.state = reduce(state: self.state, action: .revealDock)
@@ -574,6 +630,7 @@ public final class AppRuntimeController {
 
         self.updateDockContent()
         self.syncPanels()
+        self.syncSegments()
         // Yalnızca diske yazılan veri değiştiyse kaydet; flyout geçişleri gibi geçici durumlar disk yazımı gerektirmez
         if previousState.dockItems != self.state.dockItems || previousState.placement != self.state.placement {
             self.persistConfiguration()
@@ -744,7 +801,7 @@ public final class AppRuntimeController {
         }
 
         let size = flyoutSize(for: item)
-        let dockPanelFrame = panelController.dockPanel.frame
+        let dockPanelFrame = segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
         let frame = flyoutPanelFrame(
             anchorFrame: dockPanelFrame,
             screen: screen,
@@ -992,7 +1049,7 @@ public final class AppRuntimeController {
         }
 
         let flyoutSize = CGSize(width: 360.0, height: min(480.0, CGFloat(windows.count * 135 + 85)))
-        let anchorFrame = panelController.dockPanel.frame
+        let anchorFrame = segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
 
         let frame = flyoutPanelFrame(
             anchorFrame: anchorFrame,
@@ -1035,7 +1092,7 @@ public final class AppRuntimeController {
                         guard let self = self else { return }
                         let mouseLocation = NSEvent.mouseLocation
                         if !self.flyoutController.panel.frame.contains(mouseLocation) &&
-                           !self.panelController.dockPanel.frame.contains(mouseLocation) {
+                           !self.segmentDismissalRegion().contains(mouseLocation) {
                             self.dispatch(action: .flyout(.close))
                             self.flyoutController.hide()
                             self.closeFlyoutMonitors()
@@ -1055,7 +1112,7 @@ public final class AppRuntimeController {
                     if event.type == .leftMouseDown || event.type == .rightMouseDown {
                         let mouseLocation = NSEvent.mouseLocation
                         if !self.flyoutController.panel.frame.contains(mouseLocation) &&
-                           !self.panelController.dockPanel.frame.contains(mouseLocation) {
+                           !self.segmentDismissalRegion().contains(mouseLocation) {
                             self.dispatch(action: .flyout(.close))
                             self.flyoutController.hide()
                             self.closeFlyoutMonitors()
@@ -1331,15 +1388,15 @@ public final class AppRuntimeController {
         )
         items.append(
             CommandPaletteItem(
-                id: "act-dock-top",
-                title: "Dock: Move to Top Edge",
-                subtitle: "Position SplitBar horizontally at the top of the screen",
-                iconSystemName: "menubar.dock.rectangle",
+                id: "act-dock-bottom",
+                title: "Dock: Move to Bottom Edge",
+                subtitle: "Position SplitBar horizontally along the bottom of the screen",
+                iconSystemName: "dock.rectangle",
                 iconColor: .blue,
                 category: .quickActions,
                 action: { [weak self] in
                     guard let self = self else { return }
-                    self.dispatch(action: .updatePlacement(DockPlacement(edge: .top, verticalOffsetFraction: 0.5, autoHide: self.preferences.placement.autoHide)))
+                    self.dispatch(action: .updatePlacement(DockPlacement(edge: .bottom, verticalOffsetFraction: 0.5, autoHide: self.preferences.placement.autoHide)))
                 }
             )
         )
@@ -1762,10 +1819,23 @@ public final class AppRuntimeController {
                     selectedItemID: nil,
                     placement: snapshot.preferences.placement,
                     isDockRevealed: true,
-                    flyout: FlyoutState(activeItemID: nil, isVisible: false)
+                    flyout: FlyoutState(activeItemID: nil, isVisible: false),
+                    segments: snapshot.preferences.segments
                 )
+                if self.state.segments.isEmpty {
+                    self.preferences.segments = SegmentDefaults.defaultSegments(appItems: self.state.dockItems)
+                    self.state = AppState(
+                        dockItems: self.state.dockItems,
+                        selectedItemID: nil,
+                        placement: self.state.placement,
+                        isDockRevealed: true,
+                        flyout: self.state.flyout,
+                        segments: self.preferences.segments
+                    )
+                }
                 self.updateDockContent()
                 self.syncPanels()
+                self.syncSegments()
                 self.persistConfiguration()
                 Logger.persistence.info("Successfully imported configuration from: \(fileURL.path)")
             } catch {
@@ -1824,15 +1894,18 @@ public final class AppRuntimeController {
         }
 
         self.preferences = defaultPrefs
+        self.preferences.segments = SegmentDefaults.screenshotLayout(appItems: defaultItems)
         self.state = AppState(
             dockItems: defaultItems,
             selectedItemID: nil,
             placement: defaultPlacement,
             isDockRevealed: true,
-            flyout: FlyoutState(activeItemID: nil, isVisible: false)
+            flyout: FlyoutState(activeItemID: nil, isVisible: false),
+            segments: self.preferences.segments
         )
         self.updateDockContent()
         self.syncPanels()
+        self.syncSegments()
         self.persistConfiguration()
     }
 
@@ -1869,7 +1942,7 @@ public final class AppRuntimeController {
         panel.acceptsMouseMovedEvents = true
 
         guard let screen = screenService.primaryScreen() else { return }
-        let dockPanelFrame = panelController.dockPanel.frame
+        let dockPanelFrame = segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
         let flyoutFrame = flyoutPanelFrame(
             anchorFrame: dockPanelFrame,
             screen: screen,
@@ -1932,7 +2005,7 @@ public final class AppRuntimeController {
                         guard let self = self, let panel = self.addItemPanel else { return }
                         let mouseLocation = NSEvent.mouseLocation
                         if !panel.frame.contains(mouseLocation) &&
-                           !self.panelController.dockPanel.frame.contains(mouseLocation) {
+                           !self.segmentDismissalRegion().contains(mouseLocation) {
                             self.closeAddPanel()
                         }
                     }
@@ -1949,7 +2022,7 @@ public final class AppRuntimeController {
                     if event.type == .leftMouseDown || event.type == .rightMouseDown {
                         let mouseLocation = NSEvent.mouseLocation
                         if !panel.frame.contains(mouseLocation) &&
-                           !self.panelController.dockPanel.frame.contains(mouseLocation) {
+                           !self.segmentDismissalRegion().contains(mouseLocation) {
                             self.closeAddPanel()
                         }
                     }
@@ -1974,15 +2047,18 @@ public final class AppRuntimeController {
 
     public func updateDockContent() {
         Logger.dock.debug("Updating dock content hosting view")
-        let container = DockInteractiveContainerView(
-            state: self.state,
-            preferences: self.preferences,
-            config: self.magnificationConfiguration,
-            weatherState: self.weatherService.currentState,
-            aiUsageState: self.aiUsageService.sampleUsage(),
-            // Yeniden örnekleme CPU/ağ delta'larını bozar ve her dispatch'te gereksiz sistem çağrısı yapar
-            systemMetrics: self.latestSystemMetrics,
-            nowPlayingState: self.nowPlayingService.currentState,
+        syncSegments()
+    }
+
+    // MARK: - Segments
+
+    private func segmentConfiguration() -> SegmentPanelManager.Configuration {
+        SegmentPanelManager.Configuration(
+            materialStyle: preferences.materialStyle,
+            reduceMotion: preferences.reduceMotion,
+            autoHide: preferences.placement.autoHide,
+            iconBaseSize: CGFloat(preferences.dockIconSize),
+            weatherState: weatherService.currentState,
             onAction: { [weak self] action in
                 self?.dispatch(action: action)
             },
@@ -2010,15 +2086,16 @@ public final class AppRuntimeController {
             },
             onHoverItem: { [weak self] item, center in
                 guard let self = self else { return }
-                if let item = item, let center = center {
-                    let anchorFrame = self.panelController.dockPanel.frame
-                    let screenX = anchorFrame.minX + center.x
-                    let screenY = anchorFrame.maxY - center.y
+                let dockBounding = self.segmentPanelManager.boundingFrame()
+                    ?? (self.panelController.dockPanel.isVisible ? self.panelController.dockPanel.frame : nil)
+                if let item = item, let center = center, let bounding = dockBounding {
+                    let screenX = bounding.minX + center.x
+                    let screenY = bounding.maxY - center.y
                     self.tooltipController.show(
                         title: item.name,
                         badge: item.badgeText,
                         isRunning: item.isRunning,
-                        anchorFrame: anchorFrame,
+                        anchorFrame: bounding,
                         screenY: screenY,
                         screenX: screenX,
                         edge: self.state.placement.edge
@@ -2027,6 +2104,9 @@ public final class AppRuntimeController {
                     self.tooltipController.hide()
                 }
             },
+            shouldAutoHideOnHoverEnd: { [weak self] in
+                self?.state.flyout.isVisible == false
+            },
             onUpdateIconSize: { [weak self] newSize in
                 guard let self = self else { return }
                 var updated = self.preferences
@@ -2034,16 +2114,84 @@ public final class AppRuntimeController {
                 self.updatePreferences(updated)
             }
         )
-        // Hosting view yeniden oluşturulmaz; aksi halde hover ve auto-hide @State'i her canlı güncellemede sıfırlanır
-        if let dockHostingView {
-            dockHostingView.rootView = container
-            return
+    }
+
+    /// Tüm segment panellerinin birleşik çerçevesi; panel dışı tıklamalarla kapatma monitörleri bunu kullanır.
+    private func segmentDismissalRegion() -> CGRect {
+        segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
+    }
+
+    /// Bölüm panellerini state ile uzlaştırır; segment envanteri değişmedikçe paneller yerinde güncellenir.
+    public func syncSegments() {
+        guard let screen = screenService.primaryScreen() else { return }
+
+        var segments = state.segments
+        if segments.isEmpty {
+            // Eski config'lerde bölüm tanımı yoktur; ekran görüntüsü düzeni üretilir ve kalıcı hale getirilir
+            segments = SegmentDefaults.screenshotLayout(appItems: state.dockItems)
+            preferences.segments = segments
         }
-        let hostingView = NSHostingView(rootView: container)
-        hostingView.wantsLayer = true
-        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
-        panelController.setContentView(hostingView)
-        self.dockHostingView = hostingView
+        let validIDs = Set(state.dockItems.map(\.id))
+        let segmentIDs = Set(segments.flatMap(\.itemIDs))
+        if segmentIDs != validIDs {
+            let apps = state.dockItems.filter { item in
+                if case .application = item.kind { return true }
+                return false
+            }
+            let halfCount = Int(ceil(Double(apps.count) / 2.0))
+            let leadingIDs = apps.prefix(halfCount).map(\.id)
+            let trailingIDs = apps.suffix(apps.count - leadingIDs.count).map(\.id)
+            // Uygulama segmenti sırası tür bazında sayılır; segment listesi widget/tray içerebilir
+            var appsSegmentIndex = 0
+            let updated = segments.map { segment in
+                switch segment.kind {
+                case .apps:
+                    let ids = (appsSegmentIndex == 0) ? Array(leadingIDs) : Array(trailingIDs)
+                    appsSegmentIndex += 1
+                    return DockSegment(
+                        id: segment.id,
+                        kind: .apps(ids),
+                        edge: state.placement.edge,
+                        alignment: segment.alignment,
+                        offset: segment.offset,
+                        length: segment.length
+                    )
+                case .widget, .tray:
+                    return segment
+                }
+            }
+            segments = updated
+            preferences.segments = updated
+        }
+
+        let reconciledState = AppState(
+            dockItems: state.dockItems,
+            selectedItemID: state.selectedItemID,
+            placement: state.placement,
+            isDockRevealed: state.isDockRevealed,
+            flyout: state.flyout,
+            segments: segments
+        )
+        if reconciledState != state {
+            self.state = reconciledState
+        }
+
+        segmentPanelManager.sync(
+            segments: segments,
+            itemStates: makeSegmentViewStates(
+                state: state,
+                pointer: nil,
+                itemFrames: [],
+                configuration: magnificationConfiguration,
+                weatherState: weatherService.currentState,
+                aiUsageState: aiUsageService.sampleUsage(),
+                systemMetrics: latestSystemMetrics,
+                nowPlayingState: nowPlayingService.currentState
+            ),
+            screen: screen,
+            isRevealed: state.isDockRevealed,
+            configuration: segmentConfiguration()
+        )
     }
 
     public func syncPanels() {
@@ -2057,7 +2205,7 @@ public final class AppRuntimeController {
         let itemSlotSize = iconBaseSize + 8.0
 
         let panelSize: CGSize
-        if state.placement.edge == .top || state.placement.edge == .bottom {
+        if state.placement.edge == .bottom {
             let width = max(160.0, CGFloat(state.dockItems.count) * itemSlotSize + 72.0)
             panelSize = CGSize(width: width, height: capsuleThickness)
         } else {

@@ -201,7 +201,7 @@ public struct EdgeDockView: View {
             }
         )
         .offset(
-            x: ((viewState.edge == .top || viewState.edge == .bottom) && isBeingDragged) ? dragOffset : 0.0,
+            x: (viewState.edge == .bottom && isBeingDragged) ? dragOffset : 0.0,
             y: ((viewState.edge == .left || viewState.edge == .right) && isBeingDragged) ? dragOffset : 0.0
         )
         .scaleEffect(isBeingDragged ? 1.14 : 1.0)
@@ -236,7 +236,7 @@ public struct EdgeDockView: View {
                         draggingItemID = item.id
                         dragOffset = 0.0
                     }
-                    let translation = (viewState.edge == .top || viewState.edge == .bottom) ? gesture.translation.width : gesture.translation.height
+                    let translation = (viewState.edge == .bottom) ? gesture.translation.width : gesture.translation.height
                     dragOffset = translation
 
                     let threshold: CGFloat = 38.0
@@ -379,14 +379,6 @@ public struct EdgeDockView: View {
                 }
 
                 Button {
-                    onAction(.updatePlacement(DockPlacement(edge: .top, verticalOffsetFraction: 0.5, autoHide: autoHide)))
-                } label: {
-                    HStack {
-                        Text("Top Edge")
-                        if viewState.edge == .top { Image(systemName: "checkmark") }
-                    }
-                }
-                Button {
                     onAction(.updatePlacement(DockPlacement(edge: .bottom, verticalOffsetFraction: 0.5, autoHide: autoHide)))
                 } label: {
                     HStack {
@@ -458,7 +450,7 @@ public struct EdgeDockView: View {
 
     public var body: some View {
         Group {
-            if viewState.edge == .top || viewState.edge == .bottom {
+            if viewState.edge == .bottom {
                 horizontalContent
             } else {
                 verticalContent

@@ -16,10 +16,6 @@ private struct TooltipPointerShape: Shape {
             path.move(to: CGPoint(x: rect.maxX, y: rect.minY))
             path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
             path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        case .top:
-            path.move(to: CGPoint(x: rect.maxX, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         case .bottom:
             path.move(to: CGPoint(x: rect.maxX, y: rect.minY))
             path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
@@ -54,8 +50,6 @@ public struct DockItemView: View {
             return CGSize(width: -amplitude, height: 0.0)
         case .left:
             return CGSize(width: amplitude, height: 0.0)
-        case .top:
-            return CGSize(width: 0.0, height: amplitude)
         case .bottom:
             return CGSize(width: 0.0, height: -amplitude)
         }
@@ -340,7 +334,7 @@ public struct DockItemView: View {
                 Menu("Dock Edge") {
                     Button("Left") { onChangeEdge(.left) }
                     Button("Right") { onChangeEdge(.right) }
-                    Button("Top") { onChangeEdge(.top) }
+                    Button("Bottom") { onChangeEdge(.bottom) }
                 }
 
                 Divider()

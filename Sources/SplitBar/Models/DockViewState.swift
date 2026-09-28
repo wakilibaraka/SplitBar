@@ -49,6 +49,123 @@ public struct DockViewState: Equatable, Sendable {
     }
 }
 
+public struct SegmentViewState: Equatable, Identifiable, Sendable {
+    public let id: UUID
+    public let kind: SegmentKind
+    public let items: [DockItemViewState]
+    public let edge: DockEdge
+    /// Widget hapları için canlı hava durumu; nil ise yer tutucu çizilir.
+    public let weather: WeatherState?
+    /// Tray saatinin çizim anı; her içerik yenilemesinde güncellenir.
+    public let date: Date
+    /// Tray segmentinin barındırdığı widget görünümleri (config sırasıyla).
+    public let trayItems: [DockItemViewState]
+    /// Widget segmentinin tıklanınca açacağı flyout öğesinin ID'si (ör. hava durumu).
+    public let actionItemID: UUID?
+
+    public init(
+        id: UUID,
+        kind: SegmentKind,
+        items: [DockItemViewState],
+        edge: DockEdge,
+        weather: WeatherState? = nil,
+        date: Date = Date(),
+        trayItems: [DockItemViewState] = [],
+        actionItemID: UUID? = nil
+    ) {
+        self.id = id
+        self.kind = kind
+        self.items = items
+        self.edge = edge
+        self.weather = weather
+        self.date = date
+        self.trayItems = trayItems
+        self.actionItemID = actionItemID
+    }
+}
+
+public func makeSegmentViewStates(
+    state: AppState,
+    pointer: CGPoint?,
+    itemFrames: [DockItemGeometry],
+    configuration: DockMagnificationConfiguration,
+    weatherState: WeatherState?,
+    aiUsageState: AIUsageState?,
+    systemMetrics: SystemMetrics?,
+    nowPlayingState: NowPlayingState?
+) -> [SegmentViewState] {
+    // Tray segmentlerinin referans verdiği widget öğeleri de görünüm üretir
+    let trayIdentifiers = Set(state.segments.flatMap { segment -> [String] in
+        if case .tray(let identifiers) = segment.kind { return identifiers }
+        return []
+    })
+    let trayItemIDs = Set(state.dockItems.compactMap { item -> UUID? in
+        if case .widget(let widgetID) = item.kind, trayIdentifiers.contains(widgetID) { return item.id }
+        return nil
+    })
+    let sharedItemIDs = Set(state.segments.flatMap { $0.itemIDs }).union(trayItemIDs)
+    let items = state.dockItems.filter { sharedItemIDs.contains($0.id) }
+    let itemViews = makeDockViewState(
+        state: AppState(
+            dockItems: items,
+            selectedItemID: state.selectedItemID,
+            placement: state.placement,
+            isDockRevealed: state.isDockRevealed,
+            flyout: state.flyout
+        ),
+        pointer: pointer,
+        itemFrames: itemFrames,
+        configuration: configuration,
+        weatherState: weatherState,
+        aiUsageState: aiUsageState,
+        systemMetrics: systemMetrics,
+        nowPlayingState: nowPlayingState
+    ).items
+
+    let viewsByID = Dictionary(uniqueKeysWithValues: itemViews.map { ($0.id, $0) })
+    // Widget tanımlayıcısı -> görünüm (tray düğmeleri badge/çalışma durumuyla çizilsin diye)
+    var widgetViewsByID: [String: DockItemViewState] = [:]
+    for item in state.dockItems {
+        if case .widget(let widgetID) = item.kind, let view = viewsByID[item.id] {
+            widgetViewsByID[widgetID] = view
+        }
+    }
+    let now = Date()
+    return state.segments.map { segment in
+        var trayItems: [DockItemViewState] = []
+        var actionItemID: UUID?
+        switch segment.kind {
+        case .tray(let identifiers):
+            trayItems = identifiers.compactMap { widgetViewsByID[$0] }
+        case .widget(let widgetKind):
+            let expectedID: String?
+            switch widgetKind {
+            case .weather: expectedID = "weather"
+            case .calendar: expectedID = nil // takvim hapı Calendar.app'i doğrudan açar
+            case .notes: expectedID = "quick_notes"
+            case .nowPlaying: expectedID = "now_playing"
+            case .systemMonitor: expectedID = "system_monitor"
+            case .custom: expectedID = nil
+            }
+            if let expectedID = expectedID {
+                actionItemID = widgetViewsByID[expectedID]?.id
+            }
+        case .apps:
+            break
+        }
+        return SegmentViewState(
+            id: segment.id,
+            kind: segment.kind,
+            items: segment.itemIDs.compactMap { viewsByID[$0] },
+            edge: segment.edge,
+            weather: weatherState,
+            date: now,
+            trayItems: trayItems,
+            actionItemID: actionItemID
+        )
+    }
+}
+
 public func makeDockViewState(
     state: AppState,
     pointer: CGPoint?,

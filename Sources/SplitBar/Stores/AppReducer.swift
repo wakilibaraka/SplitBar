@@ -27,7 +27,8 @@ public func reduce(state: AppState, action: AppAction) -> AppState {
             selectedItemID: state.selectedItemID,
             placement: state.placement,
             isDockRevealed: state.isDockRevealed,
-            flyout: state.flyout
+            flyout: state.flyout,
+            segments: state.segments
         )
     case .removeItem(let id):
         let newItems = state.dockItems.filter { $0.id != id }
@@ -40,7 +41,8 @@ public func reduce(state: AppState, action: AppAction) -> AppState {
             selectedItemID: newSelectedID,
             placement: state.placement,
             isDockRevealed: state.isDockRevealed,
-            flyout: newFlyout
+            flyout: newFlyout,
+            segments: state.segments
         )
     case .moveItem(let sourceID, let destinationID):
         let newItems = moveDockItem(
@@ -53,7 +55,8 @@ public func reduce(state: AppState, action: AppAction) -> AppState {
             selectedItemID: state.selectedItemID,
             placement: state.placement,
             isDockRevealed: state.isDockRevealed,
-            flyout: state.flyout
+            flyout: state.flyout,
+            segments: state.segments
         )
     case .selectItem(let id):
         return AppState(
@@ -61,7 +64,8 @@ public func reduce(state: AppState, action: AppAction) -> AppState {
             selectedItemID: id,
             placement: state.placement,
             isDockRevealed: state.isDockRevealed,
-            flyout: state.flyout
+            flyout: state.flyout,
+            segments: state.segments
         )
     case .updatePlacement(let placement):
         return AppState(
@@ -69,7 +73,8 @@ public func reduce(state: AppState, action: AppAction) -> AppState {
             selectedItemID: state.selectedItemID,
             placement: placement,
             isDockRevealed: state.isDockRevealed,
-            flyout: state.flyout
+            flyout: state.flyout,
+            segments: state.segments
         )
     case .revealDock:
         return AppState(
@@ -77,7 +82,8 @@ public func reduce(state: AppState, action: AppAction) -> AppState {
             selectedItemID: state.selectedItemID,
             placement: state.placement,
             isDockRevealed: true,
-            flyout: state.flyout
+            flyout: state.flyout,
+            segments: state.segments
         )
     case .hideDock:
         return AppState(
@@ -85,7 +91,8 @@ public func reduce(state: AppState, action: AppAction) -> AppState {
             selectedItemID: state.selectedItemID,
             placement: state.placement,
             isDockRevealed: false,
-            flyout: state.flyout
+            flyout: state.flyout,
+            segments: state.segments
         )
     case .flyout(let flyoutAction):
         let newFlyout = reduceFlyout(state: state.flyout, action: flyoutAction)
@@ -94,7 +101,8 @@ public func reduce(state: AppState, action: AppAction) -> AppState {
             selectedItemID: newFlyout.activeItemID ?? state.selectedItemID,
             placement: state.placement,
             isDockRevealed: state.isDockRevealed,
-            flyout: newFlyout
+            flyout: newFlyout,
+            segments: state.segments
         )
     }
 }

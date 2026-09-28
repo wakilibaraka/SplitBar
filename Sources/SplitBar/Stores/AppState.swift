@@ -6,18 +6,21 @@ public struct AppState: Equatable, Sendable {
     public let placement: DockPlacement
     public let isDockRevealed: Bool
     public let flyout: FlyoutState
+    public let segments: [DockSegment]
 
     public init(
         dockItems: [DockItem],
         selectedItemID: UUID?,
         placement: DockPlacement,
         isDockRevealed: Bool,
-        flyout: FlyoutState
+        flyout: FlyoutState,
+        segments: [DockSegment] = []
     ) {
         self.dockItems = dockItems
         self.selectedItemID = selectedItemID
         self.placement = placement
         self.isDockRevealed = isDockRevealed
         self.flyout = flyout
+        self.segments = segments
     }
 }

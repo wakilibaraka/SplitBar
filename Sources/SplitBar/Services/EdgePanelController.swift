@@ -139,8 +139,6 @@ public final class EdgePanelController {
             return CGVector(dx: Self.slideDistance, dy: 0.0)
         case .left:
             return CGVector(dx: -Self.slideDistance, dy: 0.0)
-        case .top:
-            return CGVector(dx: 0.0, dy: Self.slideDistance)
         case .bottom:
             return CGVector(dx: 0.0, dy: -Self.slideDistance)
         }

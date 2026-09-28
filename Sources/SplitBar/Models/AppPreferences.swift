@@ -10,6 +10,9 @@ public struct AppPreferences: Codable, Equatable, Sendable {
     public var reduceMotion: Bool
     public var language: AppLanguage
     public var dockIconSize: Double
+    public var segments: [DockSegment]
+    /// SplitBar alt kenarı işgal ettiğinde gerçek Dock'un taşınacağı kenar (sol/sağ).
+    public var realDockSide: DockEdge
 
     public init(
         placement: DockPlacement,
@@ -20,7 +23,9 @@ public struct AppPreferences: Codable, Equatable, Sendable {
         selectedScreenIdentifier: String?,
         reduceMotion: Bool,
         language: AppLanguage,
-        dockIconSize: Double
+        dockIconSize: Double,
+        segments: [DockSegment]? = nil,
+        realDockSide: DockEdge? = nil
     ) {
         self.placement = placement
         self.materialStyle = materialStyle
@@ -31,6 +36,8 @@ public struct AppPreferences: Codable, Equatable, Sendable {
         self.reduceMotion = reduceMotion
         self.language = language
         self.dockIconSize = dockIconSize
+        self.segments = segments ?? []
+        self.realDockSide = realDockSide ?? .right
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -43,6 +50,8 @@ public struct AppPreferences: Codable, Equatable, Sendable {
         case reduceMotion
         case language
         case dockIconSize
+        case segments
+        case realDockSide
     }
 
     public init(from decoder: Decoder) throws {
@@ -56,6 +65,9 @@ public struct AppPreferences: Codable, Equatable, Sendable {
         self.reduceMotion = try container.decode(Bool.self, forKey: .reduceMotion)
         self.language = try container.decodeIfPresent(AppLanguage.self, forKey: .language) ?? .english
         self.dockIconSize = try container.decodeIfPresent(Double.self, forKey: .dockIconSize) ?? 46.0
+        // Eski config'lerde bölüm tanımı yoktur; SegmentPanelManager .apps öğeleri için varsayılanı üretir
+        self.segments = try container.decodeIfPresent([DockSegment].self, forKey: .segments) ?? []
+        self.realDockSide = try container.decodeIfPresent(DockEdge.self, forKey: .realDockSide) ?? .right
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -69,5 +81,7 @@ public struct AppPreferences: Codable, Equatable, Sendable {
         try container.encode(reduceMotion, forKey: .reduceMotion)
         try container.encode(language, forKey: .language)
         try container.encode(dockIconSize, forKey: .dockIconSize)
+        try container.encode(segments, forKey: .segments)
+        try container.encode(realDockSide, forKey: .realDockSide)
     }
 }

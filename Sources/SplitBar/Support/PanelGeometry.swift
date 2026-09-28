@@ -35,10 +35,6 @@ public func edgePanelFrame(
         x = screen.visibleFrame.minX + edgeInset
         let unclampedY = screen.visibleFrame.midY - (panelSize.height / 2.0)
         y = min(max(unclampedY, screen.visibleFrame.minY), screen.visibleFrame.maxY - panelSize.height)
-    case .top:
-        let unclampedX = screen.visibleFrame.midX - (panelSize.width / 2.0)
-        x = min(max(unclampedX, screen.visibleFrame.minX), screen.visibleFrame.maxX - panelSize.width)
-        y = screen.visibleFrame.maxY - panelSize.height - edgeInset
     case .bottom:
         let unclampedX = screen.visibleFrame.midX - (panelSize.width / 2.0)
         x = min(max(unclampedX, screen.visibleFrame.minX), screen.visibleFrame.maxX - panelSize.width)
@@ -63,9 +59,6 @@ public func flyoutPanelFrame(
     case .left:
         unclampedX = anchorFrame.maxX + gap
         unclampedY = anchorFrame.midY - (flyoutSize.height / 2.0)
-    case .top:
-        unclampedX = anchorFrame.midX - (flyoutSize.width / 2.0)
-        unclampedY = anchorFrame.minY - flyoutSize.height - gap
     case .bottom:
         unclampedX = anchorFrame.midX - (flyoutSize.width / 2.0)
         unclampedY = anchorFrame.maxY + gap
@@ -97,13 +90,6 @@ public func edgeActivationFrame(
             width: thickness,
             height: screen.visibleFrame.height
         )
-    case .top:
-        return CGRect(
-            x: screen.visibleFrame.minX,
-            y: screen.visibleFrame.maxY - thickness,
-            width: screen.visibleFrame.width,
-            height: thickness
-        )
     case .bottom:
         return CGRect(
             x: screen.visibleFrame.minX,
@@ -128,11 +114,46 @@ public func edgeHandleFrame(
         return CGRect(x: screen.visibleFrame.maxX - thickness - inset, y: dockFrame.midY - length / 2.0, width: thickness, height: length)
     case .left:
         return CGRect(x: screen.visibleFrame.minX + inset, y: dockFrame.midY - length / 2.0, width: thickness, height: length)
-    case .top:
-        return CGRect(x: dockFrame.midX - length / 2.0, y: screen.visibleFrame.maxY - thickness - inset, width: length, height: thickness)
     case .bottom:
         return CGRect(x: dockFrame.midX - length / 2.0, y: screen.visibleFrame.minY + inset, width: length, height: thickness)
     }
+}
+
+/// Bölüm çerçevesi: edge + alignment + offset + length + screen frame'den hesaplanır.
+/// Alt kenarda panel taban kenara sabitlenir; offscreen bölümler görünür alana sabitlenir.
+public func segmentPanelFrame(
+    segment: DockSegment,
+    screen: ScreenGeometry,
+    segmentSize: CGSize,
+    edgeInset: CGFloat
+) -> CGRect {
+    let visible = screen.visibleFrame
+    let verticalEdge = (segment.edge == .bottom)
+
+    // offset, kenarın merkezinden segmentin uzun eksenindeki kaymadır (pozitif = sağa / yukarı)
+    let crossOrigin: CGFloat
+    switch segment.alignment {
+    case .leading:
+        crossOrigin = verticalEdge ? visible.minX : visible.minY
+    case .trailing:
+        crossOrigin = verticalEdge ? visible.maxX - segmentSize.width : visible.maxY - segmentSize.height
+    case .center:
+        crossOrigin = verticalEdge ? (visible.width - segmentSize.width) / 2.0 : (visible.height - segmentSize.height) / 2.0
+    }
+
+    let origin: CGPoint
+    if verticalEdge {
+        // Hizalama temel konumu verir; offset uzun eksende kaydırır (pozitif = sağa)
+        let unclampedX = crossOrigin + segment.offset
+        let x = min(max(unclampedX, visible.minX), visible.maxX - segmentSize.width)
+        origin = CGPoint(x: x, y: visible.minY + edgeInset)
+    } else {
+        let unclampedY = crossOrigin + segment.offset
+        let y = min(max(unclampedY, visible.minY), visible.maxY - segmentSize.height)
+        origin = CGPoint(x: visible.minX + edgeInset, y: y)
+    }
+
+    return CGRect(origin: origin, size: segmentSize)
 }
 
 public func edgePanelCollectionBehavior() -> NSWindow.CollectionBehavior {
