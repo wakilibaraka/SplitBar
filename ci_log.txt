@@ -1,0 +1,190 @@
+build	Set up job	﻿2026-09-28T10:24:51.4347730Z Current runner version: '2.337.0'
+build	Set up job	2026-09-28T10:24:51.4385960Z ##[group]Runner Image Provisioner
+build	Set up job	2026-09-28T10:24:51.4387550Z Hosted Compute Agent
+build	Set up job	2026-09-28T10:24:51.4388520Z Version: 20260828.587
+build	Set up job	2026-09-28T10:24:51.4389620Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+build	Set up job	2026-09-28T10:24:51.4390950Z Build Date: 2026-08-28T16:44:25Z
+build	Set up job	2026-09-28T10:24:51.4392220Z Worker ID: {2a77fccf-103e-4bf6-b9c4-e71ab3b0cf9e}
+build	Set up job	2026-09-28T10:24:51.4393440Z Azure Region: westus
+build	Set up job	2026-09-28T10:24:51.4394540Z ##[endgroup]
+build	Set up job	2026-09-28T10:24:51.4398960Z ##[group]Operating System
+build	Set up job	2026-09-28T10:24:51.4399530Z macOS
+build	Set up job	2026-09-28T10:24:51.4399870Z 15.7.9
+build	Set up job	2026-09-28T10:24:51.4400200Z 24G830
+build	Set up job	2026-09-28T10:24:51.4400520Z ##[endgroup]
+build	Set up job	2026-09-28T10:24:51.4400870Z ##[group]Runner Image
+build	Set up job	2026-09-28T10:24:51.4401260Z Image: macos-15-arm64
+build	Set up job	2026-09-28T10:24:51.4401640Z Version: 20260907.0337.1
+build	Set up job	2026-09-28T10:24:51.4402840Z Included Software: https://github.com/actions/runner-images/blob/macos-15-arm64/20260907.0337/images/macos/macos-15-arm64-Readme.md
+build	Set up job	2026-09-28T10:24:51.4404110Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20260907.0337
+build	Set up job	2026-09-28T10:24:51.4404760Z ##[endgroup]
+build	Set up job	2026-09-28T10:24:51.4405590Z ##[group]GITHUB_TOKEN Permissions
+build	Set up job	2026-09-28T10:24:51.4408490Z Contents: read
+build	Set up job	2026-09-28T10:24:51.4408860Z Metadata: read
+build	Set up job	2026-09-28T10:24:51.4409270Z Packages: read
+build	Set up job	2026-09-28T10:24:51.4409660Z ##[endgroup]
+build	Set up job	2026-09-28T10:24:51.4412230Z Secret source: Actions
+build	Set up job	2026-09-28T10:24:51.4412860Z Cache mode: write
+build	Set up job	2026-09-28T10:24:51.4413330Z Prepare workflow directory
+build	Set up job	2026-09-28T10:24:51.4803170Z Prepare all required actions
+build	Set up job	2026-09-28T10:24:51.5082070Z Getting action download info
+build	Set up job	2026-09-28T10:24:51.7341000Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+build	Set up job	2026-09-28T10:24:51.9708720Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build	Set up job	2026-09-28T10:24:52.2169180Z Complete job name: build
+build	Run actions/checkout@v4	﻿2026-09-28T10:24:52.2654740Z ##[group]Run actions/checkout@v4
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2655360Z with:
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2655730Z   repository: wakilibaraka/SplitBar
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2658390Z   token: ***
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2658770Z   ssh-strict: true
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2659110Z   ssh-user: git
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2659440Z   persist-credentials: true
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2659790Z   clean: true
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2660140Z   sparse-checkout-cone-mode: true
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2660600Z   fetch-depth: 1
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2660920Z   fetch-tags: false
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2661250Z   show-progress: true
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2661570Z   lfs: false
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2661910Z   submodules: false
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2662290Z   set-safe-directory: true
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2662670Z   allow-unsafe-pr-checkout: false
+build	Run actions/checkout@v4	2026-09-28T10:24:52.2663140Z ##[endgroup]
+build	Run actions/checkout@v4	2026-09-28T10:24:52.6957100Z Syncing repository: wakilibaraka/SplitBar
+build	Run actions/checkout@v4	2026-09-28T10:24:52.6959280Z ##[group]Getting Git version info
+build	Run actions/checkout@v4	2026-09-28T10:24:52.6959900Z Working directory is '/Users/runner/work/SplitBar/SplitBar'
+build	Run actions/checkout@v4	2026-09-28T10:24:52.6960960Z [command]/opt/homebrew/bin/git version
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7518560Z git version 2.55.0
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7698800Z ##[endgroup]
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7705410Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/5b9de2c0-788c-4e53-b0b5-dcfdfd118d6a/.gitconfig'
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7707150Z Temporarily overriding HOME='/Users/runner/work/_temp/5b9de2c0-788c-4e53-b0b5-dcfdfd118d6a' before making global git config changes
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7708350Z Adding repository directory to the temporary git global config as a safe directory
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7709290Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/SplitBar/SplitBar
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7758380Z Deleting the contents of '/Users/runner/work/SplitBar/SplitBar'
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7765750Z ##[group]Initializing the repository
+build	Run actions/checkout@v4	2026-09-28T10:24:52.7782710Z [command]/opt/homebrew/bin/git init /Users/runner/work/SplitBar/SplitBar
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8063310Z hint: Using 'master' as the name for the initial branch. This default branch name
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8064580Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8066500Z hint: to use in all of your new repositories, which will suppress this warning,
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8067280Z hint: call:
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8067680Z hint:
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8068320Z hint: 	git config --global init.defaultBranch <name>
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8071860Z hint:
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8072780Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8073720Z hint: 'development'. The just-created branch can be renamed via this command:
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8074370Z hint:
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8075000Z hint: 	git branch -m <name>
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8075710Z hint:
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8077200Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8078430Z Initialized empty Git repository in /Users/runner/work/SplitBar/SplitBar/.git/
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8080630Z [command]/opt/homebrew/bin/git remote add origin https://github.com/wakilibaraka/SplitBar
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8155520Z ##[endgroup]
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8156190Z ##[group]Disabling automatic garbage collection
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8158850Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8240650Z ##[endgroup]
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8243520Z ##[group]Setting up auth
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8244770Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	Run actions/checkout@v4	2026-09-28T10:24:52.8323930Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	Run actions/checkout@v4	2026-09-28T10:24:52.9464160Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Run actions/checkout@v4	2026-09-28T10:24:52.9525590Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	Run actions/checkout@v4	2026-09-28T10:24:53.0298190Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Run actions/checkout@v4	2026-09-28T10:24:53.0365420Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	Run actions/checkout@v4	2026-09-28T10:24:53.1393550Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build	Run actions/checkout@v4	2026-09-28T10:24:53.1460160Z ##[endgroup]
+build	Run actions/checkout@v4	2026-09-28T10:24:53.1461120Z ##[group]Fetching the repository
+build	Run actions/checkout@v4	2026-09-28T10:24:53.1465410Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f1d82e440f41156ee9e7d25ed3bba6497350eb49:refs/remotes/origin/main
+build	Run actions/checkout@v4	2026-09-28T10:24:53.9884490Z From https://github.com/wakilibaraka/SplitBar
+build	Run actions/checkout@v4	2026-09-28T10:24:53.9885510Z  * [new ref]         f1d82e440f41156ee9e7d25ed3bba6497350eb49 -> origin/main
+build	Run actions/checkout@v4	2026-09-28T10:24:53.9887680Z ##[endgroup]
+build	Run actions/checkout@v4	2026-09-28T10:24:53.9888120Z ##[group]Determining the checkout info
+build	Run actions/checkout@v4	2026-09-28T10:24:53.9888530Z ##[endgroup]
+build	Run actions/checkout@v4	2026-09-28T10:24:53.9891410Z [command]/opt/homebrew/bin/git sparse-checkout disable
+build	Run actions/checkout@v4	2026-09-28T10:24:53.9966630Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+build	Run actions/checkout@v4	2026-09-28T10:24:54.0024160Z ##[group]Checking out the ref
+build	Run actions/checkout@v4	2026-09-28T10:24:54.0026510Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+build	Run actions/checkout@v4	2026-09-28T10:24:54.0244290Z Switched to a new branch 'main'
+build	Run actions/checkout@v4	2026-09-28T10:24:54.0252780Z branch 'main' set up to track 'origin/main'.
+build	Run actions/checkout@v4	2026-09-28T10:24:54.0256540Z ##[endgroup]
+build	Run actions/checkout@v4	2026-09-28T10:24:54.0340920Z [command]/opt/homebrew/bin/git log -1 --format=%H
+build	Run actions/checkout@v4	2026-09-28T10:24:54.0400750Z f1d82e440f41156ee9e7d25ed3bba6497350eb49
+build	Run xcodebuild -version	﻿2026-09-28T10:24:54.0579190Z ##[group]Run xcodebuild -version
+build	Run xcodebuild -version	2026-09-28T10:24:54.0579670Z ^[[36;1mxcodebuild -version^[[0m
+build	Run xcodebuild -version	2026-09-28T10:24:54.0623110Z shell: /bin/bash -e {0}
+build	Run xcodebuild -version	2026-09-28T10:24:54.0623480Z ##[endgroup]
+build	Run xcodebuild -version	2026-09-28T10:24:54.2594590Z Xcode 16.4
+build	Run xcodebuild -version	2026-09-28T10:24:54.2606370Z Build version 16F6
+build	Run swift build -c release	﻿2026-09-28T10:24:54.2652750Z ##[group]Run swift build -c release
+build	Run swift build -c release	2026-09-28T10:24:54.2653200Z ^[[36;1mswift build -c release^[[0m
+build	Run swift build -c release	2026-09-28T10:24:54.2689110Z shell: /bin/bash -e {0}
+build	Run swift build -c release	2026-09-28T10:24:54.2689470Z ##[endgroup]
+build	Run swift build -c release	2026-09-28T10:24:59.4237540Z Building for production...
+build	Run swift build -c release	2026-09-28T10:24:59.4287980Z [0/4] Write sources
+build	Run swift build -c release	2026-09-28T10:24:59.5903730Z [1/4] Write swift-version--79AA4F9932D1E87A.txt
+build	Run swift build -c release	2026-09-28T10:25:48.1415290Z [3/5] Compiling SplitBar AppDelegate.swift
+build	Run swift build -c release	2026-09-28T10:25:48.1509600Z /Users/runner/work/SplitBar/SplitBar/Sources/SplitBar/App/AppDelegate.swift:20:20: error: type 'DockEdge' has no member 'bottom'
+build	Run swift build -c release	2026-09-28T10:25:48.1510840Z  18 | 
+build	Run swift build -c release	2026-09-28T10:25:48.1511130Z  19 |         let defaultPlacement = DockPlacement(
+build	Run swift build -c release	2026-09-28T10:25:48.1511620Z  20 |             edge: .bottom,
+build	Run swift build -c release	2026-09-28T10:25:48.1512670Z     |                    `- error: type 'DockEdge' has no member 'bottom'
+build	Run swift build -c release	2026-09-28T10:25:48.1513280Z  21 |             verticalOffsetFraction: 0.5,
+build	Run swift build -c release	2026-09-28T10:25:48.1513800Z  22 |             autoHide: false
+build	Run swift build -c release	2026-09-28T10:25:48.1515020Z 
+build	Run swift build -c release	2026-09-28T10:25:48.1515550Z /Users/runner/work/SplitBar/SplitBar/Sources/SplitBar/App/AppRuntimeController.swift:1328:82: error: type 'DockEdge' has no member 'bottom'
+build	Run swift build -c release	2026-09-28T10:25:48.1516290Z 1326 |                 category: .quickActions,
+build	Run swift build -c release	2026-09-28T10:25:48.1518430Z 1327 |                 action: { [weak self] in
+build	Run swift build -c release	2026-09-28T10:25:48.1519520Z 1328 |                     self?.dispatch(action: .updatePlacement(DockPlacement(edge: .bottom, verticalOffsetFraction: 0.5, autoHide: false)))
+build	Run swift build -c release	2026-09-28T10:25:48.1520390Z      |                                                                                  `- error: type 'DockEdge' has no member 'bottom'
+build	Run swift build -c release	2026-09-28T10:25:48.1520820Z 1329 |                 }
+build	Run swift build -c release	2026-09-28T10:25:48.1521090Z 1330 |             )
+build	Run swift build -c release	2026-09-28T10:25:48.1521320Z 
+build	Run swift build -c release	2026-09-28T10:25:48.1521780Z /Users/runner/work/SplitBar/SplitBar/Sources/SplitBar/App/AppRuntimeController.swift:1780:20: error: type 'DockEdge' has no member 'bottom'
+build	Run swift build -c release	2026-09-28T10:25:48.1522690Z 1778 |         Logger.persistence.info("Resetting configuration to factory defaults")
+build	Run swift build -c release	2026-09-28T10:25:48.1523240Z 1779 |         let defaultPlacement = DockPlacement(
+build	Run swift build -c release	2026-09-28T10:25:48.1523600Z 1780 |             edge: .bottom,
+build	Run swift build -c release	2026-09-28T10:25:48.1524070Z      |                    `- error: type 'DockEdge' has no member 'bottom'
+build	Run swift build -c release	2026-09-28T10:25:48.1525150Z 1781 |             verticalOffsetFraction: 0.5,
+build	Run swift build -c release	2026-09-28T10:25:48.1525580Z 1782 |             autoHide: false
+build	Run swift build -c release	2026-09-28T10:25:48.1525780Z 
+build	Run swift build -c release	2026-09-28T10:25:48.1526430Z /Users/runner/work/SplitBar/SplitBar/Sources/SplitBar/Services/FaviconService.swift:88:37: warning: capture of 'resultImage' with non-sendable type 'NSImage?' in a '@Sendable' closure; this is an error in the Swift 6 language mode
+build	Run swift build -c release	2026-09-28T10:25:48.1527610Z  86 |             await MainActor.run {
+build	Run swift build -c release	2026-09-28T10:25:48.1528030Z  87 |                 FaviconService.shared.inFlight.remove(cleanHost)
+build	Run swift build -c release	2026-09-28T10:25:48.1528520Z  88 |                 if let validImage = resultImage {
+build	Run swift build -c release	2026-09-28T10:25:48.1529230Z     |                                     `- warning: capture of 'resultImage' with non-sendable type 'NSImage?' in a '@Sendable' closure; this is an error in the Swift 6 language mode
+build	Run swift build -c release	2026-09-28T10:25:48.1530100Z  89 |                     FaviconService.shared.memoryCache[cleanHost] = validImage
+build	Run swift build -c release	2026-09-28T10:25:48.1530660Z  90 |                     NotificationCenter.default.post(
+build	Run swift build -c release	2026-09-28T10:25:48.1530870Z 
+build	Run swift build -c release	2026-09-28T10:25:48.1531190Z Swift.Optional:1:21: note: generic enum 'Optional' does not conform to the 'Sendable' protocol
+build	Run swift build -c release	2026-09-28T10:25:48.1531940Z 1 | @frozen public enum Optional<Wrapped> : ~Copyable where Wrapped : ~Copyable {
+build	Run swift build -c release	2026-09-28T10:25:48.1532850Z   |                     `- note: generic enum 'Optional' does not conform to the 'Sendable' protocol
+build	Run swift build -c release	2026-09-28T10:25:48.1545740Z 2 |     case none
+build	Run swift build -c release	2026-09-28T10:25:48.1546080Z 3 |     case some(Wrapped)
+build	Run swift build -c release	2026-09-28T10:25:48.1546270Z 
+build	Run swift build -c release	2026-09-28T10:25:48.1547220Z /Users/runner/work/SplitBar/SplitBar/Sources/SplitBar/Views/Dock/AppWindowPreviewsFlyoutView.swift:205:54: warning: non-sendable result type 'NSImage?' cannot be sent from nonisolated context in call to instance method 'captureThumbnail(forWindowID:)'; this is an error in the Swift 6 language mode
+build	Run swift build -c release	2026-09-28T10:25:48.1549000Z 203 |         .task {
+build	Run swift build -c release	2026-09-28T10:25:48.1549300Z 204 |             if liveThumbnail == nil {
+build	Run swift build -c release	2026-09-28T10:25:48.1549750Z 205 |                 liveThumbnail = await previewService.captureThumbnail(forWindowID: window.id)
+build	Run swift build -c release	2026-09-28T10:25:48.1554560Z     |                                                      `- warning: non-sendable result type 'NSImage?' cannot be sent from nonisolated context in call to instance method 'captureThumbnail(forWindowID:)'; this is an error in the Swift 6 language mode
+build	Run swift build -c release	2026-09-28T10:25:48.1557440Z 206 |             }
+build	Run swift build -c release	2026-09-28T10:25:48.1557920Z 207 |         }
+build	Run swift build -c release	2026-09-28T10:25:48.1558090Z 
+build	Run swift build -c release	2026-09-28T10:25:48.1558340Z Swift.Optional:1:21: note: generic enum 'Optional' does not conform to the 'Sendable' protocol
+build	Run swift build -c release	2026-09-28T10:25:48.1558990Z 1 | @frozen public enum Optional<Wrapped> : ~Copyable where Wrapped : ~Copyable {
+build	Run swift build -c release	2026-09-28T10:25:48.1559600Z   |                     `- note: generic enum 'Optional' does not conform to the 'Sendable' protocol
+build	Run swift build -c release	2026-09-28T10:25:48.1560000Z 2 |     case none
+build	Run swift build -c release	2026-09-28T10:25:48.1560290Z 3 |     case some(Wrapped)
+build	Run swift build -c release	2026-09-28T10:25:48.1718480Z ##[error]Process completed with exit code 1.
+build	Post Run actions/checkout@v4	﻿2026-09-28T10:25:48.1986640Z Post job cleanup.
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.5599220Z [command]/opt/homebrew/bin/git version
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.5849110Z git version 2.55.0
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.5870240Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/1a0ab1b2-c70c-4a5f-9787-43ff1a2ed80f/.gitconfig'
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.5881850Z Temporarily overriding HOME='/Users/runner/work/_temp/1a0ab1b2-c70c-4a5f-9787-43ff1a2ed80f' before making global git config changes
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.5883810Z Adding repository directory to the temporary git global config as a safe directory
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.5886050Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/SplitBar/SplitBar
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.6009590Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.6077820Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.7333140Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.7392660Z http.https://github.com/.extraheader
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.7403920Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.7515700Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.9470270Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Post Run actions/checkout@v4	2026-09-28T10:25:48.9774590Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	Complete job	﻿2026-09-28T10:25:49.1241140Z Cleaning up orphan processes
+build	Complete job	2026-09-28T10:25:50.4792260Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

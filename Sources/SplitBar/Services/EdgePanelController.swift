@@ -43,7 +43,7 @@ struct EdgeHandleView: View {
     let style: DockMaterialStyle
 
     var body: some View {
-        let isVertical = edge != .top
+        let isVertical = (edge == .left || edge == .right)
         ZStack {
             ThemedGlassBackground(style: style, cornerRadius: 8.0)
             Group {

@@ -2057,7 +2057,7 @@ public final class AppRuntimeController {
         let itemSlotSize = iconBaseSize + 8.0
 
         let panelSize: CGSize
-        if state.placement.edge == .top {
+        if state.placement.edge == .top || state.placement.edge == .bottom {
             let width = max(160.0, CGFloat(state.dockItems.count) * itemSlotSize + 72.0)
             panelSize = CGSize(width: width, height: capsuleThickness)
         } else {
