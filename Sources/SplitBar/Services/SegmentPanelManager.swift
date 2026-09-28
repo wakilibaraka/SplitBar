@@ -187,9 +187,9 @@ public final class SegmentPanelManager {
                 let textWidth = CGFloat((condition ?? "Weather").count) * 6.2
                 naturalLength = max(150.0, min(230.0, 92.0 + textWidth))
             case .calendar:
-                naturalLength = 96.0
+                naturalLength = 90.0
             case .notes, .nowPlaying, .systemMonitor, .custom:
-                naturalLength = 108.0
+                naturalLength = 104.0
             }
         case .tray(let identifiers):
             let iconSlot: CGFloat = identifiers.count > 4 ? 30.0 : 32.0
@@ -237,13 +237,16 @@ public final class SegmentPanelManager {
                     : rect.offsetBy(dx: 0.0, dy: value - rect.minY)
             }
 
+            // Haplar gerçek genişliğini .fixedSize ile seçtiği için tahmini çerçeveler arasında
+            // görsel nefes payı bırakılır; yarı piksel minimum sıkışınca yine devreye girer.
+            let spacing = max(Self.minimumInterSegmentGap, 10.0)
             let ordered = idsOnEdge.sorted {
                 originAxis(frames[$0] ?? .zero) < originAxis(frames[$1] ?? .zero)
             }
             for (index, id) in ordered.enumerated() where index > 0 {
                 let previousID = ordered[index - 1]
                 guard let previous = frames[previousID], var current = frames[id] else { continue }
-                let minimumOrigin = endAxis(previous) + Self.minimumInterSegmentGap
+                let minimumOrigin = endAxis(previous) + spacing
                 if originAxis(current) < minimumOrigin {
                     current = setOriginAxis(current, minimumOrigin)
                     frames[id] = current

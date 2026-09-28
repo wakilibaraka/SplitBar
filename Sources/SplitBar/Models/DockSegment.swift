@@ -150,9 +150,9 @@ public enum SegmentDefaults {
         "system_monitor"
     ]
 
-    /// Ekran görüntüsündeki düzen: sol altta hava durumu + takvim hapları, ortada uygulama
-    /// çubuğu, sağ altta tray. Tek `.apps` çubuğu B1'deki gibi ikiye bölündüğü için
-    /// çubuk her ekranda merkeze yakın kalır.
+    /// Ekran görüntüsündeki düzen: sol altta hava durumu hapı, ortada uygulama çubuğu,
+    /// sağ altta takvim + tray. Takvim, tray'in solunda durur. Tek `.apps` çubuğu
+    /// B1'deki gibi ikiye bölündüğü için çubuk her ekranda merkeze yakın kalır.
     public static func screenshotLayout(appItems: [DockItem]) -> [DockSegment] {
         let apps = appItems.filter {
             if case .application = $0.kind { return true }
@@ -163,16 +163,36 @@ public enum SegmentDefaults {
         let trailingIDs = Array(apps.suffix(apps.count - leadingIDs.count).map(\.id))
         return [
             DockSegment(kind: .widget(.weather), edge: .bottom, alignment: .leading, offset: 0.0),
-            DockSegment(kind: .widget(.calendar), edge: .bottom, alignment: .leading, offset: 8.0),
             DockSegment(kind: .apps(leadingIDs), edge: .bottom, alignment: .center, offset: 0.0),
             DockSegment(kind: .apps(trailingIDs), edge: .bottom, alignment: .center, offset: 0.0),
+            DockSegment(kind: .widget(.calendar), edge: .bottom, alignment: .trailing, offset: 0.0),
             DockSegment(kind: .tray(trayWidgetIdentifiers), edge: .bottom, alignment: .trailing, offset: 0.0)
         ]
     }
 
-    /// B1 tarafından otomatik üretilen düzeni tanır (elle düzenlenmiş config'lere dokunmaz).
+    /// Eski otomatik düzenleri tanır (elle düzenlenmiş config'lere dokunmaz): B1'in iki
+    /// `.apps` segmenti ve B3'ün ilk sürümündeki sol-takvim düzeni.
     /// UUID'ler umursanmaz; tür/kenar/hizalama/offset/bölünme oranına bakılır.
     public static func isAutoB1Layout(appItems: [DockItem], segments: [DockSegment]) -> Bool {
+        if matchesLayout(appItems: appItems, segments: segments) { return true }
+        // B3'ün ilk otomatik düzeni: takvim sol tarafta (leading, offset 8)
+        var calendarLeading = segments
+        for index in calendarLeading.indices {
+            if case .widget(.calendar) = calendarLeading[index].kind {
+                calendarLeading[index] = DockSegment(
+                    id: calendarLeading[index].id,
+                    kind: .widget(.calendar),
+                    edge: .bottom,
+                    alignment: .leading,
+                    offset: 8.0
+                )
+            }
+        }
+        return matchesLayout(appItems: appItems, segments: calendarLeading)
+    }
+
+    /// Segment listesinin B1'in iki-segment otomatik düzeniyle eşleşip eşleşmediği.
+    private static func matchesLayout(appItems: [DockItem], segments: [DockSegment]) -> Bool {
         let expected = defaultSegments(appItems: appItems)
         guard segments.count == expected.count else { return false }
         for (segment, expectedSegment) in zip(segments, expected) {
