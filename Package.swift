@@ -2,27 +2,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "EdgeDeck",
+    name: "SplitBar",
     platforms: [
         .macOS(.v15)
     ],
     products: [
         .executable(
-            name: "EdgeDeck",
-            targets: ["EdgeDeck"]
+            name: "SplitBar",
+            targets: ["SplitBar"]
         )
     ],
     dependencies: [],
     targets: [
         .executableTarget(
-            name: "EdgeDeck",
+            name: "SplitBar",
             dependencies: [],
-            path: "Sources/EdgeDeck"
-        ),
-        .testTarget(
-            name: "EdgeDeckTests",
-            dependencies: ["EdgeDeck"],
-            path: "Tests/EdgeDeckTests"
+            path: "Sources/SplitBar",
+            swiftSettings: [
+                .swiftLanguageMode(.v5)
+            ]
         )
     ]
 )
