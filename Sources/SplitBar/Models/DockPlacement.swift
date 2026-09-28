@@ -5,7 +5,6 @@ public enum DockEdge: String, Codable, CaseIterable, Sendable {
     case right
     case bottom
     case top
-    case bottom
 }
 
 public struct DockPlacement: Codable, Equatable, Sendable {
