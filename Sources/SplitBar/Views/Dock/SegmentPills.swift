@@ -8,12 +8,14 @@ struct PillMetrics {
     let iconBaseSize: CGFloat
 
     var iconSize: CGFloat { max(12.0, iconBaseSize * 0.34) }
+    /// Merkezi dock ile aynı şerit yüksekliği; hap camı paneli doldurur.
+    var capsuleHeight: CGFloat { iconBaseSize + 22.0 }
     var primaryFontSize: CGFloat { max(11.0, iconBaseSize * 0.30) }
     var secondaryFontSize: CGFloat { max(8.5, iconBaseSize * 0.20) }
     var horizontalPadding: CGFloat { max(10.0, iconBaseSize * 0.30) }
     var verticalPadding: CGFloat { max(5.0, iconBaseSize * 0.15) }
     var contentSpacing: CGFloat { max(6.0, iconBaseSize * 0.16) }
-    var cornerRadius: CGFloat { max(14.0, (iconBaseSize * 0.62 + 18.0) / 2.0) }
+    var cornerRadius: CGFloat { max(16.0, (iconBaseSize + 22.0) / 2.0) }
     var trayIconSlot: CGFloat { trayIconSize + max(4.0, iconBaseSize * 0.10) }
     var trayIconSize: CGFloat { max(13.0, iconBaseSize * 0.40) }
 }
@@ -59,6 +61,7 @@ struct WeatherPillView: View {
             }
             .padding(.horizontal, metrics.horizontalPadding)
             .padding(.vertical, metrics.verticalPadding)
+            .frame(minHeight: metrics.capsuleHeight)
             .background(ThemedGlassBackground(style: materialStyle, cornerRadius: metrics.cornerRadius))
         }
         .buttonStyle(.plain)
@@ -94,6 +97,7 @@ struct CalendarPillView: View {
             }
             .padding(.horizontal, metrics.horizontalPadding - 2.0)
             .padding(.vertical, metrics.verticalPadding)
+            .frame(minHeight: metrics.capsuleHeight)
             .background(ThemedGlassBackground(style: materialStyle, cornerRadius: metrics.cornerRadius))
         }
         .buttonStyle(.plain)
@@ -167,6 +171,7 @@ struct TrayClusterView: View {
         }
         .padding(.horizontal, metrics.horizontalPadding)
         .padding(.vertical, metrics.verticalPadding)
+        .frame(minHeight: metrics.capsuleHeight)
         .background(ThemedGlassBackground(style: materialStyle, cornerRadius: metrics.cornerRadius))
         .fixedSize()
     }
@@ -194,6 +199,7 @@ struct PlaceholderSegmentPillView: View {
         }
         .padding(.horizontal, metrics.horizontalPadding - 2.0)
         .padding(.vertical, metrics.verticalPadding)
+        .frame(minHeight: metrics.capsuleHeight)
         .background(ThemedGlassBackground(style: materialStyle, cornerRadius: metrics.cornerRadius))
         .fixedSize()
     }

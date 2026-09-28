@@ -150,49 +150,41 @@ public enum SegmentDefaults {
         "system_monitor"
     ]
 
-    /// Ekran görüntüsündeki düzen: sol altta hava durumu hapı, ortada uygulama çubuğu,
-    /// sağ altta takvim + tray. Takvim, tray'in solunda durur. Tek `.apps` çubuğu
-    /// B1'deki gibi ikiye bölündüğü için çubuk her ekranda merkeze yakın kalır.
+    /// Ekran görüntüsündeki düzen: sol altta hava durumu hapı, ortada TEK uygulama çubuğu,
+    /// sağ altta takvim + tray. Tüm segmentler aynı kalınlıkta çizilir.
     public static func screenshotLayout(appItems: [DockItem]) -> [DockSegment] {
-        let apps = appItems.filter {
+        let appIDs = appItems.filter {
             if case .application = $0.kind { return true }
             return false
-        }
-        let halfCount = Int(ceil(Double(apps.count) / 2.0))
-        let leadingIDs = Array(apps.prefix(halfCount).map(\.id))
-        let trailingIDs = Array(apps.suffix(apps.count - leadingIDs.count).map(\.id))
+        }.map(\.id)
         return [
             DockSegment(kind: .widget(.weather), edge: .bottom, alignment: .leading, offset: 0.0),
-            DockSegment(kind: .apps(leadingIDs), edge: .bottom, alignment: .center, offset: 0.0),
-            DockSegment(kind: .apps(trailingIDs), edge: .bottom, alignment: .center, offset: 0.0),
+            DockSegment(kind: .apps(appIDs), edge: .bottom, alignment: .center, offset: 0.0),
             DockSegment(kind: .widget(.calendar), edge: .bottom, alignment: .trailing, offset: 0.0),
             DockSegment(kind: .tray(trayWidgetIdentifiers), edge: .bottom, alignment: .trailing, offset: 0.0)
         ]
     }
 
     /// Eski otomatik düzenleri tanır (elle düzenlenmiş config'lere dokunmaz): B1'in iki
-    /// `.apps` segmenti ve B3'ün ilk sürümündeki sol-takvim düzeni.
-    /// UUID'ler umursanmaz; tür/kenar/hizalama/offset/bölünme oranına bakılır.
+    /// `.apps` segmenti ve B3/B4'ün otomatik 5-segment düzenleri.
     public static func isAutoB1Layout(appItems: [DockItem], segments: [DockSegment]) -> Bool {
-        if matchesLayout(appItems: appItems, segments: segments) { return true }
-        // B3'ün ilk otomatik düzeni: takvim sol tarafta (leading, offset 8)
-        var calendarLeading = segments
-        for index in calendarLeading.indices {
-            if case .widget(.calendar) = calendarLeading[index].kind {
-                calendarLeading[index] = DockSegment(
-                    id: calendarLeading[index].id,
-                    kind: .widget(.calendar),
-                    edge: .bottom,
-                    alignment: .leading,
-                    offset: 8.0
-                )
-            }
-        }
-        return matchesLayout(appItems: appItems, segments: calendarLeading)
+        if matchesB1Layout(appItems: appItems, segments: segments) { return true }
+        if matchesLegacyFiveSegmentLayout(
+            appItems: appItems,
+            segments: segments,
+            calendarAlignment: .leading,
+            calendarOffset: 8.0
+        ) { return true }
+        return matchesLegacyFiveSegmentLayout(
+            appItems: appItems,
+            segments: segments,
+            calendarAlignment: .trailing,
+            calendarOffset: 0.0
+        )
     }
 
-    /// Segment listesinin B1'in iki-segment otomatik düzeniyle eşleşip eşleşmediği.
-    private static func matchesLayout(appItems: [DockItem], segments: [DockSegment]) -> Bool {
+    /// B1: iki `.apps` segmenti (leading + trailing), widget yok.
+    private static func matchesB1Layout(appItems: [DockItem], segments: [DockSegment]) -> Bool {
         let expected = defaultSegments(appItems: appItems)
         guard segments.count == expected.count else { return false }
         for (segment, expectedSegment) in zip(segments, expected) {
@@ -209,6 +201,52 @@ public enum SegmentDefaults {
             guard segment.edge == expectedSegment.edge,
                   segment.alignment == expectedSegment.alignment,
                   segment.offset == expectedSegment.offset else {
+                return false
+            }
+        }
+        return true
+    }
+
+    /// B3/B4 otomatik düzenleri: [hava, uygulamalar ×2, takvim, tray]; takvim hangi tarafta
+    /// olduğu sürüme göre değişir. Uygulama ID'leri ikiye bölünme dışında eşleşmek zorunda.
+    private static func matchesLegacyFiveSegmentLayout(
+        appItems: [DockItem],
+        segments: [DockSegment],
+        calendarAlignment: SegmentAlignment,
+        calendarOffset: CGFloat
+    ) -> Bool {
+        guard segments.count == 5 else { return false }
+        let apps = appItems.filter {
+            if case .application = $0.kind { return true }
+            return false
+        }
+        let halfCount = Int(ceil(Double(apps.count) / 2.0))
+        let leadingIDs = Array(apps.prefix(halfCount).map(\.id))
+        let trailingIDs = Array(apps.suffix(apps.count - leadingIDs.count).map(\.id))
+
+        let expectedKinds: [(SegmentKind, DockEdge, SegmentAlignment, CGFloat)] = [
+            (.widget(.weather), .bottom, .leading, 0.0),
+            (.apps(leadingIDs), .bottom, .center, 0.0),
+            (.apps(trailingIDs), .bottom, .center, 0.0),
+            (.widget(.calendar), .bottom, calendarAlignment, calendarOffset),
+            (.tray(trayWidgetIdentifiers), .bottom, .trailing, 0.0)
+        ]
+        for (segment, expected) in zip(segments, expectedKinds) {
+            let kindMatches: Bool
+            switch (segment.kind, expected.0) {
+            case (.apps(let ids), .apps(let expectedIDs)):
+                kindMatches = (ids == expectedIDs)
+            case (.widget(let a), .widget(let b)):
+                kindMatches = (a == b)
+            case (.tray(let ids), .tray(let expectedIDs)):
+                kindMatches = (ids == expectedIDs)
+            default:
+                kindMatches = false
+            }
+            guard kindMatches,
+                  segment.edge == expected.1,
+                  segment.alignment == expected.2,
+                  segment.offset == expected.3 else {
                 return false
             }
         }

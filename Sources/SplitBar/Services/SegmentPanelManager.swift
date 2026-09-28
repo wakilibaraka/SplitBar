@@ -192,14 +192,8 @@ public final class SegmentPanelManager {
     public func size(for segment: DockSegment, on edge: DockEdge) -> CGSize {
         // sync öncesi çerçeve sorgusu gelirse 46 pt varsayılan ikon boyutu kullanılır
         let iconBaseSize = configuration?.iconBaseSize ?? 46.0
-        // Asimetrik ölçek: uygulama kapsülü tam kalınlıkta, hap görünümleri daha ince olur
-        let thickness: CGFloat
-        switch segment.kind {
-        case .apps:
-            thickness = iconBaseSize + 22.0
-        case .widget, .tray:
-            thickness = iconBaseSize * 0.62 + 18.0
-        }
+        // Tüm segmentler tek görünür şerit gibi aynı kalınlıkta çizilir
+        let thickness = iconBaseSize + 22.0
         let itemSlotSize = iconBaseSize + 8.0
         let naturalLength: CGFloat
         switch segment.kind {
