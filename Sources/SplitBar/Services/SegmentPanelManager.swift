@@ -10,6 +10,7 @@ public struct SegmentContainerView: View {
     public let reduceMotion: Bool
     public let autoHide: Bool
     public let iconBaseSize: CGFloat
+    public let onItemFrames: (UUID, [DockItemGeometry]) -> Void
     public let onAction: (AppAction) -> Void
     public let onOpenAddPanel: () -> Void
     public let onSelectTheme: (DockMaterialStyle) -> Void
@@ -42,17 +43,29 @@ public struct SegmentContainerView: View {
                     onShowAppWindows: onShowAppWindows,
                     onUpdateIconSize: onUpdateIconSize
                 )
+                .onPreferenceChange(DockItemFramesPreferenceKey.self) { preferences in
+                    let geometries = preferences.map { pref in
+                        DockItemGeometry(id: pref.id, logicalFrame: pref.frame)
+                    }
+                    onItemFrames(segment.id, geometries)
+                }
             case .widget(let widgetKind):
+                let metrics = PillMetrics(iconBaseSize: iconBaseSize)
                 switch widgetKind {
                 case .weather:
-                    WeatherPillView(segment: segment, materialStyle: materialStyle, onAction: onAction)
+                    WeatherPillView(segment: segment, materialStyle: materialStyle, metrics: metrics, onAction: onAction)
                 case .calendar:
-                    CalendarPillView(segment: segment, materialStyle: materialStyle)
+                    CalendarPillView(segment: segment, materialStyle: materialStyle, metrics: metrics)
                 case .notes, .nowPlaying, .systemMonitor, .custom:
-                    PlaceholderSegmentPillView(title: placeholderTitle(widgetKind), materialStyle: materialStyle)
+                    PlaceholderSegmentPillView(title: placeholderTitle(widgetKind), materialStyle: materialStyle, metrics: metrics)
                 }
             case .tray:
-                TrayClusterView(segment: segment, materialStyle: materialStyle, onAction: onAction)
+                TrayClusterView(
+                    segment: segment,
+                    materialStyle: materialStyle,
+                    metrics: PillMetrics(iconBaseSize: iconBaseSize),
+                    onAction: onAction
+                )
             }
         }
         .onContinuousHover { phase in
@@ -117,6 +130,8 @@ public final class SegmentPanelManager {
         public var iconBaseSize: CGFloat
         /// Hava durumu hapı genişliği canlı durum metnine göre ölçülür.
         public var weatherState: WeatherState?
+        /// Bölüm içindeki öğe çerçeveleri (panel koordinatı); flyout ikon üstüne bağlanır.
+        public var onItemFrames: (UUID, [DockItemGeometry]) -> Void
         public var onAction: (AppAction) -> Void
         public var onOpenAddPanel: () -> Void
         public var onSelectTheme: (DockMaterialStyle) -> Void
@@ -132,6 +147,7 @@ public final class SegmentPanelManager {
             autoHide: Bool,
             iconBaseSize: CGFloat,
             weatherState: WeatherState? = nil,
+            onItemFrames: @escaping (UUID, [DockItemGeometry]) -> Void,
             onAction: @escaping (AppAction) -> Void,
             onOpenAddPanel: @escaping () -> Void,
             onSelectTheme: @escaping (DockMaterialStyle) -> Void,
@@ -146,6 +162,7 @@ public final class SegmentPanelManager {
             self.autoHide = autoHide
             self.iconBaseSize = iconBaseSize
             self.weatherState = weatherState
+            self.onItemFrames = onItemFrames
             self.onAction = onAction
             self.onOpenAddPanel = onOpenAddPanel
             self.onSelectTheme = onSelectTheme
@@ -162,6 +179,8 @@ public final class SegmentPanelManager {
 
     private var controllers: [UUID: SegmentPanelController] = [:]
     public private(set) var lastSegmentFrames: [UUID: CGRect] = [:]
+    /// En son bildirilen öğe çerçeveleri (panel içi mantıksal koordinat).
+    public private(set) var lastItemFrames: [UUID: [UUID: CGRect]] = [:]
     /// İlk sync'te tam yapılandırma alınır; panel sahibi init sırasında henüz hazır olmayabilir.
     private var configuration: Configuration?
     private let collectionBehavior = edgePanelCollectionBehavior()
@@ -173,27 +192,35 @@ public final class SegmentPanelManager {
     public func size(for segment: DockSegment, on edge: DockEdge) -> CGSize {
         // sync öncesi çerçeve sorgusu gelirse 46 pt varsayılan ikon boyutu kullanılır
         let iconBaseSize = configuration?.iconBaseSize ?? 46.0
-        let thickness = iconBaseSize + 22.0
+        // Asimetrik ölçek: uygulama kapsülü tam kalınlıkta, hap görünümleri daha ince olur
+        let thickness: CGFloat
+        switch segment.kind {
+        case .apps:
+            thickness = iconBaseSize + 22.0
+        case .widget, .tray:
+            thickness = iconBaseSize * 0.62 + 18.0
+        }
         let itemSlotSize = iconBaseSize + 8.0
         let naturalLength: CGFloat
         switch segment.kind {
         case .apps(let ids):
             naturalLength = max(160.0, CGFloat(ids.count) * itemSlotSize + 72.0)
         case .widget(let widgetKind):
+            // Durum metnine göre ölçülür; PillMetrics oranlarıyla kalibre edilir
+            let metrics = PillMetrics(iconBaseSize: iconBaseSize)
             switch widgetKind {
             case .weather:
-                // Durum metnine göre ölçülür; uzun koşullar için pay bırakılır
                 let condition = configuration?.weatherState?.conditionText
-                let textWidth = CGFloat((condition ?? "Weather").count) * 6.2
-                naturalLength = max(150.0, min(230.0, 92.0 + textWidth))
+                let textWidth = CGFloat((condition ?? "Weather").count) * (metrics.secondaryFontSize * 0.52)
+                naturalLength = max(130.0, min(220.0, metrics.iconSize + metrics.horizontalPadding * 2 + textWidth + metrics.primaryFontSize * 4.4))
             case .calendar:
-                naturalLength = 90.0
+                naturalLength = metrics.iconSize + metrics.horizontalPadding * 2 + metrics.primaryFontSize * 3.4
             case .notes, .nowPlaying, .systemMonitor, .custom:
-                naturalLength = 104.0
+                naturalLength = metrics.iconSize + metrics.horizontalPadding * 2 + metrics.primaryFontSize * 5.0
             }
         case .tray(let identifiers):
-            let iconSlot: CGFloat = identifiers.count > 4 ? 30.0 : 32.0
-            naturalLength = CGFloat(identifiers.count) * iconSlot + 96.0
+            let metrics = PillMetrics(iconBaseSize: iconBaseSize)
+            naturalLength = CGFloat(identifiers.count) * metrics.trayIconSlot + metrics.horizontalPadding * 2 + metrics.primaryFontSize * 3.2 + 14.0
         }
         let length = segment.length ?? naturalLength
         return (edge == .bottom)
@@ -284,6 +311,7 @@ public final class SegmentPanelManager {
                 controller.panel.contentView = nil
             }
             lastSegmentFrames[id] = nil
+            lastItemFrames[id] = nil
         }
 
         let statesByID = Dictionary(uniqueKeysWithValues: itemStates.map { ($0.id, $0) })
@@ -328,6 +356,7 @@ public final class SegmentPanelManager {
             reduceMotion: configuration.reduceMotion,
             autoHide: configuration.autoHide,
             iconBaseSize: configuration.iconBaseSize,
+            onItemFrames: configuration.onItemFrames,
             onAction: configuration.onAction,
             onOpenAddPanel: configuration.onOpenAddPanel,
             onSelectTheme: configuration.onSelectTheme,
@@ -344,5 +373,36 @@ public final class SegmentPanelManager {
         let visible = lastSegmentFrames.values.filter { $0.width > 0.0 && $0.height > 0.0 }
         guard let first = visible.first else { return nil }
         return visible.reduce(first) { $0.union($1) }
+    }
+
+    /// Bir segmentin çerçevesi; widget hapları kendi flyout'ları için bunu bağlaç olarak kullanır.
+    public func frame(forSegment segmentID: UUID) -> CGRect? {
+        let frame = lastSegmentFrames[segmentID]
+        guard let frame = frame, frame.width > 0.0, frame.height > 0.0 else { return nil }
+        return frame
+    }
+
+    /// SwiftUI preference akışı: bölümün öğe çerçevelerini saklar (panel içi mantıksal koordinat).
+    func lastItemFramesReport(segmentID: UUID, geometries: [DockItemGeometry]) {
+        var byID: [UUID: CGRect] = [:]
+        for geometry in geometries {
+            byID[geometry.id] = geometry.logicalFrame
+        }
+        lastItemFrames[segmentID] = byID
+    }
+
+    /// Öğenin ekran koordinatlarındaki çerçevesi: panel çerçevesi + panel içi mantıksal çerçeve.
+    /// SwiftUI y-ekseni yukarı doğru panel mantığına göre çevrilir (maxY - frame.maxY).
+    public func screenFrame(forItem itemID: UUID, inSegment segmentID: UUID) -> CGRect? {
+        guard let panelFrame = frame(forSegment: segmentID),
+              let logical = lastItemFrames[segmentID]?[itemID] else {
+            return nil
+        }
+        return CGRect(
+            x: panelFrame.minX + logical.minX,
+            y: panelFrame.maxY - logical.maxY,
+            width: logical.width,
+            height: logical.height
+        )
     }
 }

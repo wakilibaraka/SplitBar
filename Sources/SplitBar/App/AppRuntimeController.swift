@@ -184,6 +184,7 @@ public final class AppRuntimeController {
     public let launchAtLoginService: LaunchAtLoginService
     public let quickNotesService: QuickNotesService
     public let tooltipController: DockTooltipPanelController
+    public let windowPreviewStripController: WindowPreviewStripController
     public private(set) var statusBarController: StatusBarController?
     public let magnificationConfiguration: DockMagnificationConfiguration
     public private(set) var clipboardHistory: [ClipboardEntry]
@@ -242,6 +243,7 @@ public final class AppRuntimeController {
         self.launchAtLoginService = launchAtLoginService
         self.quickNotesService = quickNotesService
         self.tooltipController = DockTooltipPanelController()
+        self.windowPreviewStripController = WindowPreviewStripController()
         self.clipboardPolicy = preferences.clipboardRetention
         do {
             self.clipboardHistory = try clipboardPersistence.loadHistory()
@@ -801,14 +803,26 @@ public final class AppRuntimeController {
         }
 
         let size = flyoutSize(for: item)
-        let dockPanelFrame = segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
-        let frame = flyoutPanelFrame(
-            anchorFrame: dockPanelFrame,
-            screen: screen,
-            edge: state.placement.edge,
-            flyoutSize: size,
-            gap: 12.0
-        )
+        // Flyout, tıklanan ikonun/hapın üstünde açılır; bağlaç yoksa birleşik çerçeveye düşer
+        let itemAnchor = flyoutAnchor(for: item)
+        let frame: CGRect
+        if let itemAnchor = itemAnchor, state.placement.edge == .bottom, segmentPanelManager.lastItemFrames.values.contains(where: { $0[item.id] != nil }) {
+            frame = flyoutPanelFrame(
+                anchoredToItem: itemAnchor,
+                screen: screen,
+                edge: state.placement.edge,
+                flyoutSize: size,
+                gap: 12.0
+            )
+        } else {
+            frame = flyoutPanelFrame(
+                anchorFrame: itemAnchor ?? panelController.dockPanel.frame,
+                screen: screen,
+                edge: state.placement.edge,
+                flyoutSize: size,
+                gap: 12.0
+            )
+        }
 
         let contentView: AnyView
         if case .widget(let widgetID) = item.kind, widgetID == "clipboard" {
@@ -1049,7 +1063,12 @@ public final class AppRuntimeController {
         }
 
         let flyoutSize = CGSize(width: 360.0, height: min(480.0, CGFloat(windows.count * 135 + 85)))
-        let anchorFrame = segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
+        // Pencere önizlemeleri, sağ tıklanan uygulama ikonunun üstünde açılır
+        let anchorFrame = segmentPanelManager.lastItemFrames.values
+            .first(where: { $0.keys.contains(where: { id in
+                state.dockItems.first(where: { $0.id == id })?.kind.isApplication == true
+            }) })
+            .flatMap { _ in segmentPanelManager.boundingFrame() } ?? segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
 
         let frame = flyoutPanelFrame(
             anchorFrame: anchorFrame,
@@ -1095,6 +1114,7 @@ public final class AppRuntimeController {
                            !self.segmentDismissalRegion().contains(mouseLocation) {
                             self.dispatch(action: .flyout(.close))
                             self.flyoutController.hide()
+                            self.windowPreviewStripController.hide()
                             self.closeFlyoutMonitors()
                         }
                     }
@@ -1115,6 +1135,7 @@ public final class AppRuntimeController {
                            !self.segmentDismissalRegion().contains(mouseLocation) {
                             self.dispatch(action: .flyout(.close))
                             self.flyoutController.hide()
+                            self.windowPreviewStripController.hide()
                             self.closeFlyoutMonitors()
                         }
                     }
@@ -2059,6 +2080,9 @@ public final class AppRuntimeController {
             autoHide: preferences.placement.autoHide,
             iconBaseSize: CGFloat(preferences.dockIconSize),
             weatherState: weatherService.currentState,
+            onItemFrames: { [weak self] segmentID, geometries in
+                self?.segmentPanelManager.lastItemFramesReport(segmentID: segmentID, geometries: geometries)
+            },
             onAction: { [weak self] action in
                 self?.dispatch(action: action)
             },
@@ -2091,17 +2115,30 @@ public final class AppRuntimeController {
                 if let item = item, let center = center, let bounding = dockBounding {
                     let screenX = bounding.minX + center.x
                     let screenY = bounding.maxY - center.y
-                    self.tooltipController.show(
-                        title: item.name,
-                        badge: item.badgeText,
-                        isRunning: item.isRunning,
-                        anchorFrame: bounding,
-                        screenY: screenY,
-                        screenX: screenX,
-                        edge: self.state.placement.edge
-                    )
+                    // Uygulama ikonunda DockDoor tarzı canlı pencere şeridi; aksi halde klasik tooltip
+                    if case .application(let bundleID, let appURL) = item.kind {
+                        self.tooltipController.hide()
+                        self.scheduleWindowPreviewStrip(
+                            itemID: item.id,
+                            appName: item.name,
+                            bundleIdentifier: bundleID,
+                            appIconURL: appURL
+                        )
+                    } else {
+                        self.windowPreviewStripController.hide()
+                        self.tooltipController.show(
+                            title: item.name,
+                            badge: item.badgeText,
+                            isRunning: item.isRunning,
+                            anchorFrame: bounding,
+                            screenY: screenY,
+                            screenX: screenX,
+                            edge: self.state.placement.edge
+                        )
+                    }
                 } else {
                     self.tooltipController.hide()
+                    self.windowPreviewStripController.hide()
                 }
             },
             shouldAutoHideOnHoverEnd: { [weak self] in
@@ -2119,6 +2156,61 @@ public final class AppRuntimeController {
     /// Tüm segment panellerinin birleşik çerçevesi; panel dışı tıklamalarla kapatma monitörleri bunu kullanır.
     private func segmentDismissalRegion() -> CGRect {
         segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
+    }
+
+    /// Hover debounce'u: aynı ikonda tekrar tetiklenmeyi engeller, 300 ms gecikme şeridi sakinleştirir.
+    private var pendingPreviewItemID: UUID?
+    private var pendingPreviewTask: Task<Void, Never>?
+
+    private func scheduleWindowPreviewStrip(
+        itemID: UUID,
+        appName: String,
+        bundleIdentifier: String,
+        appIconURL: URL?
+    ) {
+        guard let screen = screenService.primaryScreen() else { return }
+        if windowPreviewStripController.isShowing(bundleIdentifier: bundleIdentifier) { return }
+        guard pendingPreviewItemID != itemID || windowPreviewStripController.panel.isVisible == false else { return }
+
+        pendingPreviewItemID = itemID
+        pendingPreviewTask?.cancel()
+        pendingPreviewTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled, let self = self else { return }
+            // İkonun ekran çerçevesi; şerit onun üstünde açılır
+            var anchor: CGRect?
+            for (segmentID, itemFrames) in self.segmentPanelManager.lastItemFrames where itemFrames[itemID] != nil {
+                anchor = self.segmentPanelManager.screenFrame(forItem: itemID, inSegment: segmentID)
+                break
+            }
+            guard let anchorFrame = anchor else { return }
+            self.windowPreviewStripController.show(
+                appName: appName,
+                bundleIdentifier: bundleIdentifier,
+                appIconURL: appIconURL,
+                anchorFrame: anchorFrame,
+                screen: screen,
+                edge: self.state.placement.edge,
+                previewService: self.windowPreviewService,
+                onSelectWindow: { [weak self] window in
+                    self?.windowPreviewService.focusWindow(info: window, bundleIdentifier: bundleIdentifier)
+                }
+            )
+        }
+    }
+
+    /// Flyout bağlacı: öğenin ekran çerçevesi, yoksa segment çerçevesi, o da yoksa birleşik çerçeve.
+    /// Widget hapları kendi üstlerinde, tray düğmeleri tıklanan düğmenin üstünde açılır.
+    private func flyoutAnchor(for item: DockItem) -> CGRect? {
+        for (segmentID, itemFrames) in segmentPanelManager.lastItemFrames where itemFrames[item.id] != nil {
+            return segmentPanelManager.screenFrame(forItem: item.id, inSegment: segmentID)
+        }
+        for (segmentID, frames) in segmentPanelManager.lastSegmentFrames {
+            if state.segments.first(where: { $0.id == segmentID })?.itemIDs.contains(item.id) == true {
+                return frames
+            }
+        }
+        return segmentPanelManager.boundingFrame() ?? panelController.dockPanel.frame
     }
 
     /// Bölüm panellerini state ile uzlaştırır; segment envanteri değişmedikçe paneller yerinde güncellenir.
@@ -2239,6 +2331,7 @@ public final class AppRuntimeController {
         } else {
             panelController.hide(edge: state.placement.edge)
             tooltipController.hide()
+            windowPreviewStripController.hide()
         }
     }
 }

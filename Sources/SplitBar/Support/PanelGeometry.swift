@@ -70,6 +70,36 @@ public func flyoutPanelFrame(
     return CGRect(x: clampedX, y: clampedY, width: flyoutSize.width, height: flyoutSize.height)
 }
 
+/// İkon-pill bazlı flyout çerçevesi: alt kenarda flyout, verilen ikon dikdörtgeninin
+/// tam üstünde ve onunla yatayda ortalanmış konumlanır; yan kenarlarda ikonun yanında.
+/// Ekran kenarlarına sabitlenir; böylece kıyıdaki ikonların flyout'u ekrandan taşmaz.
+public func flyoutPanelFrame(
+    anchoredToItem itemFrame: CGRect,
+    screen: ScreenGeometry,
+    edge: DockEdge,
+    flyoutSize: CGSize,
+    gap: CGFloat
+) -> CGRect {
+    let unclampedX: CGFloat
+    let unclampedY: CGFloat
+    switch edge {
+    case .bottom:
+        unclampedX = itemFrame.midX - (flyoutSize.width / 2.0)
+        unclampedY = itemFrame.maxY + gap
+    case .left:
+        unclampedX = itemFrame.maxX + gap
+        unclampedY = itemFrame.midY - (flyoutSize.height / 2.0)
+    case .right:
+        unclampedX = itemFrame.minX - flyoutSize.width - gap
+        unclampedY = itemFrame.midY - (flyoutSize.height / 2.0)
+    }
+
+    let clampedX = min(max(unclampedX, screen.visibleFrame.minX), screen.visibleFrame.maxX - flyoutSize.width)
+    let clampedY = min(max(unclampedY, screen.visibleFrame.minY), screen.visibleFrame.maxY - flyoutSize.height)
+
+    return CGRect(x: clampedX, y: clampedY, width: flyoutSize.width, height: flyoutSize.height)
+}
+
 public func edgeActivationFrame(
     screen: ScreenGeometry,
     edge: DockEdge,

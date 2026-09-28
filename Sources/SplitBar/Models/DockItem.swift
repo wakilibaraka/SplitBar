@@ -4,6 +4,11 @@ public enum DockItemKind: Codable, Equatable, Sendable {
     case application(bundleIdentifier: String, applicationURL: URL)
     case link(url: URL)
     case widget(widgetIdentifier: String)
+
+    public var isApplication: Bool {
+        if case .application = self { return true }
+        return false
+    }
 }
 
 public struct DockItem: Identifiable, Codable, Equatable, Sendable {
